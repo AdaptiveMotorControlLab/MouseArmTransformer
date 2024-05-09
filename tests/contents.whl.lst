@@ -1,0 +1,13 @@
+lifting_transformer-0.2.0.dist-info/METADATA
+lifting_transformer-0.2.0.dist-info/RECORD
+lifting_transformer-0.2.0.dist-info/top_level.txt
+lifting_transformer-0.2.0.dist-info/WHEEL
+lifting_transformer/criterion.py
+lifting_transformer/data.py
+lifting_transformer/helper.py
+lifting_transformer/inference.py
+lifting_transformer/__init__.py
+lifting_transformer/__main__.py
+lifting_transformer/model.py
+lifting_transformer/training.py
+lifting_transformer/weights/weights_9_loss0.026_seq7_cutoff0.99_lossweights[1, 25.0, 1.0]_smoothing5.pt
