@@ -10,13 +10,13 @@ from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 try:
+    from lifting_transformer.lifting.rig import MouseReachingRig5_2018
+
     from mausspaun.data_processing.dlc import (
         DLC_TO_MUJOCO_MAPPING,
         align_data_with_rig_markers,
         get_dlc_data,
-        triangulate_data,
     )
-    from mausspaun.data_processing.lifting.rig import MouseReachingRig5_2018
     from mausspaun.data_processing.lifting.utils import _f32, _f64
     from mausspaun.visualization import plot_3D_video
 
@@ -521,3 +521,119 @@ def compute_gt_statistics(errors_df, verbose):
             print("\nMax Error Per Marker:\n", max_error_per_marker)
             print("\nMin Error Per Marker:\n", min_error_per_marker)
             print("\nStandard Deviation Per Marker:\n", std_deviation_per_marker)
+
+
+def triangulate_data(
+    calibration_folder,
+    alignment_points,
+    save_path=None,
+    plot=False,
+    **dataset_kwargs,
+):
+    rig = MouseReachingRig5_2018(f"{calibration_folder}/")
+
+    if plot:
+        fig1 = rig.visualize_calibration(max_view=1)
+        plt.show()
+
+    dlc_data = DeepLabCutDataset(**dataset_kwargs)
+    points3d = dlc_data.triangulate(rig)
+
+    if len(dlc_data.joints) != points3d.shape[1]:
+        raise Exception("Number of labels does not match number of markers")
+
+    # get the DLC rig marker data, and triangulate to 3D
+    reference_points = joblib.load(alignment_points)
+
+    # filter for shared points
+    cam1_align = dict(zip(
+        reference_points["camera_1"]["labels"],
+        reference_points["camera_1"]["points"],
+    ))
+    cam2_align = dict(zip(
+        reference_points["camera_2"]["labels"],
+        reference_points["camera_2"]["points"],
+    ))
+
+    shared_ids = list(set(cam1_align.keys()).intersection(set(cam2_align.keys())))
+    cam1_align = np.stack([cam1_align[i] for i in shared_ids], axis=0)
+    cam2_align = np.stack([cam2_align[i] for i in shared_ids], axis=0)
+
+    arrays = [np.random.uniform(0, 1, (np.random.randint(10, 100), 5, 7)) for _ in range(10)]
+    # TODO: replace with exception and message
+    assert all((a == b).all() for a, b in zip(unpack(*pack(*arrays)), arrays))
+
+    num_timepoints, keypoints, _ = dlc_data.points_camera_1.shape
+
+    # these are the calibration points
+    cpoints_1, cpoints_2 = rig.board.image_points.reshape(2, -1, 2)
+
+    # these are the points in the video
+    points_1 = dlc_data.points_camera_1.reshape(-1, 2)
+    points_2 = dlc_data.points_camera_2.reshape(-1, 2)
+
+    # package the tracked points, calibration points and alignment points
+    p1, l1 = pack(points_1, cpoints_1, cam1_align)
+    p2, l2 = pack(points_2, cpoints_2, cam2_align)
+    # TODO: replace with exception and message
+    assert l1 == l2
+
+    # run triangulation
+    points3d = rig.stereo_rig.triangulate(p1, p2)
+
+    # unpack and reshape everything
+    points3d, cpoints3d, align_points3d = unpack(points3d, l1)
+    points3d = points3d.reshape(num_timepoints, keypoints, 3)
+
+    # TODO: why is 33 hard coded?
+    points_1 = points_1.reshape(-1, dlc_data.points_camera_1.shape[1], 2)
+    points_2 = points_2.reshape(-1, dlc_data.points_camera_2.shape[1], 2)
+
+    if plot:
+        ax = plt.subplot(111, projection="3d")
+        # TODO: ideally we're reading the labels from the dlc file
+        ax.plot(*align_points3d[:3].T, label="0-2", linewidth=3, c="k")
+        ax.plot(*align_points3d[3:].T, label="7-8", linewidth=3, c="k")
+        ax.scatter(*points3d[:, 18].T, label="joystick (for ref)")
+        ax.scatter(*points3d[:, 9].T, label="hand (for ref)")
+        ax.legend()
+        plt.show()
+
+        ax = plt.subplot(111, projection="3d")
+        ax.plot(*align_points3d[:3].T, label="0-2", linewidth=3, c="k")
+        ax.plot(*align_points3d[3:].T, label="7-8", linewidth=3, c="k")
+        ax.scatter(*cpoints3d.T, label="calibration")
+        ax.legend()
+        plt.show()
+
+        def overlay_plot(camera_data):
+            plt.imshow(camera_data["image"])
+            for i, (x, y) in zip(camera_data["labels"], camera_data["points"]):
+                plt.text(x, y, str(i), color="red")
+
+        overlay_plot(reference_points["camera_1"])
+        plt.scatter(*points_1[::10, 18].T, alpha=0.5, c=dlc_data.likelihoods[::10, 18, 0])
+
+        plt.show()
+        overlay_plot(reference_points["camera_2"])
+        plt.scatter(*points_2[::10, 18].T, alpha=0.5, c=dlc_data.likelihoods[::10, 18, 1])
+        plt.show()
+
+    data = {
+        "joint_links": dlc_data.joint_links,
+        "points_3d": points3d,
+        "alignment_points_3d": align_points3d,
+        "alignment_points_camera_1": cam1_align,
+        "alignment_points_camera_2": cam2_align,
+        "points_camera_1": dlc_data.points_camera_1,
+        "points_camera_2": dlc_data.points_camera_2,
+        "likelihoods_camera_1": dlc_data.likelihoods[:, :, 0],
+        "likelihoods_camera_2": dlc_data.likelihoods[:, :, 1],
+        "joint_names": dlc_data.joints,
+    }
+
+    if save_path is not None:
+        joblib.dump(data, save_path)
+        print(f"Saved .jl files under : {save_path}")
+
+    return data
