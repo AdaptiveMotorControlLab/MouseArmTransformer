@@ -13,11 +13,11 @@ from scipy.spatial.distance import euclidean
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-import lifting_transformer.criterion
-import lifting_transformer.data
-import lifting_transformer.helper
-import lifting_transformer.model
-from lifting_transformer.helper import DLC_TO_MUJOCO_MAPPING
+import MouseArmTransformer.criterion
+import MouseArmTransformer.data
+import MouseArmTransformer.helper
+import MouseArmTransformer.model
+from MouseArmTransformer.helper import DLC_TO_MUJOCO_MAPPING
 
 __all__ = ["run_inference"]
 
@@ -85,7 +85,7 @@ def run_inference(camera1_dict,
                   model_weights='weights_epoch_5_loss0.11_seq2_cutoff0.999_lossweights[1, 25, 1, 1e-05].pt',
                   seq_length=7):
     # Make sure joints are in the same order as in the training data
-    original_joints = lifting_transformer.helper.mausspaun_keys
+    original_joints = MouseArmTransformer.helper.mausspaun_keys
     
     # Dict is sorted based on insert order
     camera1_dict = {key: camera1_dict[key] for key in original_joints}
@@ -97,7 +97,7 @@ def run_inference(camera1_dict,
 
     # Load model and weights
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = lifting_transformer.model.SimpleTransformer(num_joints=len(joints))
+    model = MouseArmTransformer.model.SimpleTransformer(num_joints=len(joints))
     model.load_state_dict(torch.load(_get_weight_path(model_weights), map_location=device))
     model.to(device)
 
@@ -105,7 +105,7 @@ def run_inference(camera1_dict,
     labels = np.zeros((camera1.shape[0], camera1.shape[1], 3))
     camera2 = np.zeros_like(camera1)
     print(camera1.shape)
-    inference_dataset = lifting_transformer.data.PositionDataset(camera1, camera2, labels, seq_length=seq_length)
+    inference_dataset = MouseArmTransformer.data.PositionDataset(camera1, camera2, labels, seq_length=seq_length)
     inference_dataloader = DataLoader(inference_dataset, batch_size=128, shuffle=False)
 
     # Run inference
@@ -113,7 +113,7 @@ def run_inference(camera1_dict,
                                                inference_dataloader,
                                                gt_dataloader=None,
                                                device=device,
-                                               criterion=lifting_transformer.criterion.masked_loss)
+                                               criterion=MouseArmTransformer.criterion.masked_loss)
     print(f"Inference loss: {inference_loss:.5f}")
 
     # Put back into dictionary
@@ -135,14 +135,14 @@ def evaluate_ground_truth(inference_preds, mouse_name, day, attempt, part=0, ver
     inference_preds_np = np.transpose(np.array([cp for key, cp in inference_preds.items()]), axes=(1, 0, 2))
 
     # Load ground truth data
-    labeled_3d = lifting_transformer.helper.load_and_process_ground_truth(mouse_name, day, attempt, part)
+    labeled_3d = MouseArmTransformer.helper.load_and_process_ground_truth(mouse_name, day, attempt, part)
     if labeled_3d is None:
         return -1, pd.DataFrame([])
 
     temp_dfs = []
     for frame in labeled_3d['frame'].unique():
         for marker in DLC_TO_MUJOCO_MAPPING.keys():
-            error = lifting_transformer.helper.calculate_gt_error(frame, marker, inference_preds_np, labeled_3d,
+            error = MouseArmTransformer.helper.calculate_gt_error(frame, marker, inference_preds_np, labeled_3d,
                                                                   DLC_TO_MUJOCO_MAPPING)
             temp_df = pd.DataFrame({'frame': [frame], 'marker': [DLC_TO_MUJOCO_MAPPING[marker]], 'error': [error]})
             temp_dfs.append(temp_df)
@@ -150,6 +150,6 @@ def evaluate_ground_truth(inference_preds, mouse_name, day, attempt, part=0, ver
     errors_df = pd.concat(temp_dfs, ignore_index=True)
 
     # Compute and print statistics
-    lifting_transformer.helper.compute_gt_statistics(errors_df, verbose)
+    MouseArmTransformer.helper.compute_gt_statistics(errors_df, verbose)
 
     return errors_df['error'].mean(), errors_df

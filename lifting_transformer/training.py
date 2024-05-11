@@ -5,8 +5,8 @@ from einops import rearrange, repeat
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-import lifting_transformer.helper
-from lifting_transformer.criterion import mspe_loss
+import MouseArmTransformer.helper
+from MouseArmTransformer.criterion import mspe_loss
 
 
 def train(model, dataloader, gt_dataloader, device, criterion, optimizer, loss_weights, relative_displacements,
@@ -37,7 +37,7 @@ def train(model, dataloader, gt_dataloader, device, criterion, optimizer, loss_w
             continuity_criterion(outputs[:, 1:], outputs[:, :-1]) / relative_displacements[..., np.newaxis])
 
         # With connectivity loss:
-        output_distances = lifting_transformer.helper.calculate_euclidean_distance_4D_torch(outputs)
+        output_distances = MouseArmTransformer.helper.calculate_euclidean_distance_4D_torch(outputs)
         connectivity_loss = mspe_loss(output_distances, all_aggregated_tensor)
 
         # Combine

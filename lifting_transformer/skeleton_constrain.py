@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 from mausspaun.data_processing.dlc import align_data_with_rig_markers, get_dlc_data
-from lifting_transformer.helpers import triangulate_data
+from MouseArmTransformer.helpers import triangulate_data
 
 from mausspaun.arm import MouseArm
 

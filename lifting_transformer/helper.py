@@ -10,7 +10,7 @@ from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 try:
-    from lifting_transformer.lifting.rig import MouseReachingRig5_2018
+    from MouseArmTransformer.lifting.rig import MouseReachingRig5_2018
 
     from mausspaun.data_processing.dlc import (
         DLC_TO_MUJOCO_MAPPING,
