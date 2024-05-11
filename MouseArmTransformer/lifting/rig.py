@@ -3,8 +3,8 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 
-from mausspaun.data_processing.lifting.board import Checkerboard
-from mausspaun.data_processing.lifting.calibration import CameraCalibration
+from MouseArmTransformer.lifting.board import Checkerboard
+from MouseArmTransformer.lifting.calibration import CameraCalibration
 
 
 class RigConfig:

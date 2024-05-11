@@ -10,7 +10,7 @@ import itertools
 
 import PIL.Image
 
-from mausspaun.data_processing.lifting import opencv, utils
+from MouseArmTransformer.lifting import opencv, utils
 
 
 @dataclasses.dataclass

@@ -10,8 +10,8 @@ import itertools
 import PIL.Image
 import PIL.ImageOps
 
-from mausspaun.data_processing.lifting.camera import Camera
-from mausspaun.data_processing.lifting.utils import _f32, _f64
+from MouseArmTransformer.lifting.camera import Camera
+from MouseArmTransformer.lifting.utils import _f32, _f64
 
 
 def project_points(camera, world_points):

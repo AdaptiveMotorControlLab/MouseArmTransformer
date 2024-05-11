@@ -10,9 +10,9 @@ import itertools
 import glob
 import PIL.Image
 
-from mausspaun.data_processing.lifting import opencv
-from mausspaun.data_processing.lifting.camera import StereoCamera
-from mausspaun.data_processing.lifting.utils import _f32, _f64
+from MouseArmTransformer.lifting import opencv
+from MouseArmTransformer.lifting.camera import StereoCamera
+from MouseArmTransformer.lifting.utils import _f32, _f64
 
 
 class CameraCalibration:
