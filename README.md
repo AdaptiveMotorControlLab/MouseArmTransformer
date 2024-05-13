@@ -1,7 +1,7 @@
 # Utilities for lifting 2D DLC keypoints into 3D mouse-arm space
 
-This directory contains the `lifting_transformer` module along with prototyping code and notebooks.
-The relevant files are contained in the `liftings_transformer` directory. Right now, it is possible
+This directory contains the `MouseArmTransformer` module along with prototyping code and notebooks.
+The relevant files are contained in the `MouseArmTransformer` directory. Right now, it is possible
 to do a minimal install for loading model weights and performing inference.
 
 TODO: Extend the package to support training in python environments that contain the `mousearm` python
@@ -26,8 +26,8 @@ sth like this:
 
 ```
 dist/                                           
-dist/lifting_transformer-0.1.0-py3-none-any.whl 
-dist/lifting_transformer-0.1.0.tar.gz           
+dist/MouseArmTransformer-0.1.0-py3-none-any.whl 
+dist/MouseArmTransformer-0.1.0.tar.gz           
 ```
 
 ## Testing the code
@@ -51,13 +51,13 @@ to run the tests.
 ## Contributing
 
 If you change pieces of the code and these should be merged to the main branch, **please update
-the version number** of this code. This can be done in `lifting_transformer/__init__.py`. 
+the version number** of this code. This can be done in `MouseArmTransformer/__init__.py`. 
 
 You also need to edit the `Makefile` and change this part
 
 ```
 tests/contents.tgz.lst:                                                              
-        tar tf dist/lifting_transformer-0.0.1.tar.gz | sort > tests/contents.tgz.lst 
+        tar tf dist/MouseArmTransformer-0.0.1.tar.gz | sort > tests/contents.tgz.lst 
 ```
 
 to reflect the new version information for the tests to pass. The new wheel can then be shipped
@@ -70,7 +70,7 @@ https://github.com/MMathisLab/DataJoint_mathis/tree/stes/new-dlc-and-alignment/d
 
 ## Who to contact for questions
 
-- Markus (@CYHSM) wrote the `lifting_transformer` contents, and trained the model.
+- Markus (@CYHSM) wrote the `MouseArmTransformer` contents, and trained the model.
   He also wrote the explorative notebooks etc. and validated the model.
 - Steffen (@stes) packaged the code for integration into datajoint. More details on this
   are also written up here: https://github.com/MMathisLab/DataJoint_mathis/pull/87

@@ -1,4 +1,4 @@
-DOCKERNAME := mausspaun/lifting-transformer
+DOCKERNAME := mausspaun/MouseArmTransformer
 
 docker:
 	docker build -t ${DOCKERNAME} .
@@ -13,14 +13,14 @@ test_docker: docker build
 		python3 -m pytest -vvv /app/tests
 
 test_contents:
-	tar tf dist/lifting_transformer-*.tar.gz | sort | diff tests/contents.tgz.lst -
-	unzip -lqq dist/lifting_transformer-*.whl | sed -e 's/  \+/@/g' | cut -d@ -f4 | sort | diff tests/contents.whl.lst -
+	tar tf dist/MouseArmTransformer-*.tar.gz | sort | diff tests/contents.tgz.lst -
+	unzip -lqq dist/MouseArmTransformer-*.whl | sed -e 's/  \+/@/g' | cut -d@ -f4 | sort | diff tests/contents.whl.lst -
 
 tests/contents.tgz.lst:
-	tar tf dist/lifting_transformer-0.2.0.tar.gz | sort > tests/contents.tgz.lst
+	tar tf dist/MouseArmTransformer-0.2.0.tar.gz | sort > tests/contents.tgz.lst
 
 tests/contents.whl.lst:
-	unzip -lqq dist/lifting_transformer-*.whl | sed -e 's/  \+/@/g' | cut -d@ -f4 | sort > tests/contents.whl.lst
+	unzip -lqq dist/MouseArmTransformer-*.whl | sed -e 's/  \+/@/g' | cut -d@ -f4 | sort > tests/contents.whl.lst
 
 build:
 	docker run -v $(shell pwd):/app \

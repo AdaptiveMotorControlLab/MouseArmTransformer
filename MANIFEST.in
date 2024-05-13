@@ -1,1 +1,1 @@
-include lifting_transformer/weights/*.pt
+include MouseArmTransformer/weights/*.pt
