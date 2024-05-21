@@ -17,7 +17,7 @@ try:
         align_data_with_rig_markers,
         get_dlc_data,
     )
-    from mausspaun.data_processing.lifting.utils import _f32, _f64
+    from MouseArmTransformer.lifting.utils import _f32, _f64
     from mausspaun.visualization import plot_3D_video
 
 except (ImportError, ModuleNotFoundError):

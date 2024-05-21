@@ -132,11 +132,13 @@ def evaluate_ground_truth(inference_preds, mouse_name, day, attempt, part=0, ver
     assert part == 0, "3D ground truth only available for part 0"
 
     # Convert predictions from dict to numpy
-    inference_preds_np = np.transpose(np.array([cp for key, cp in inference_preds.items()]), axes=(1, 0, 2))
+    inference_preds_np = np.transpose(inference_preds, axes=(0, 2, 1))
 
     # Load ground truth data
     labeled_3d = MouseArmTransformer.helper.load_and_process_ground_truth(mouse_name, day, attempt, part)
     if labeled_3d is None:
+        return -1, pd.DataFrame([])
+    if labeled_3d.index.empty:
         return -1, pd.DataFrame([])
 
     temp_dfs = []
