@@ -14,7 +14,7 @@ from matplotlib.path import Path
 from sklearn.decomposition import PCA
 
 from mausspaun.data_processing.dlc import align_data_with_rig_markers
-from mausspaun.data_processing.lifting.rig import MouseReachingRig5_2018
+from MouseArmTransformer.lifting.rig import MouseReachingRig5_2018
 from mausspaun.data_processing.utils import interp_nan, pack, unpack
 
 

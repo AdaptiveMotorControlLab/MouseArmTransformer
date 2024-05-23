@@ -474,10 +474,10 @@ def calculate_gt_error(frame, marker, numpy_array, df, marker_mapping):
     if marker_mapping[marker] in mausspaun_keys:
         marker_index = mausspaun_keys.index(marker_mapping[marker])
     else:
-        return -1
+        return -1, [-1, -1, -1], [-1, -1, -1]
     numpy_coords = numpy_array[frame, marker_index, :]
     error = euclidean(df_coords, numpy_coords)
-    return error
+    return error, df_coords, numpy_coords
 
 
 def load_and_process_ground_truth(mouse_name, day, attempt, part, to_mujoco=True, gt_path="/data/mausspaun/labeled/"):
