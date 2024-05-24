@@ -184,7 +184,7 @@ def bodypart_to_color(bodypart):
 # --- Save ---
 def save(self):
     # Define filename
-    fname = f"rigVideo_mouse-{self.args.mouse_name}_day-{self.args.day}_attempt-{self.args.attempt}_part-{self.args.part}_"
+    fname = f"{self.args.user}_rigVideo_mouse-{self.args.mouse_name}_day-{self.args.day}_attempt-{self.args.attempt}_part-{self.args.part}_"
     # Add the current date up to minutes
     fname_with_date = fname + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M_")
 

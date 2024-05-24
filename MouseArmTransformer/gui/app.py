@@ -332,6 +332,7 @@ def parse_arguments():
     parser.add_argument("--day", default="77")
     parser.add_argument("--attempt", default="1")
     parser.add_argument("--part", default="0")
+    parser.add_argument("--user", default=os.getlogin())
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -344,8 +345,9 @@ if __name__ == "__main__":
     original_filepaths = utils.generate_filepaths(base_path + 'videos/videos_dlc2/', args.mouse_name, args.day, args.attempt, args.part)
 
     # Check if session has been labeled before
+    print('Using base path: {}, and user {}'.format(base_path, args.user))
     output_dir = os.path.join(base_path, 'labeled')
-    fname = f"rigVideo_mouse-{args.mouse_name}_day-{args.day}_attempt-{args.attempt}_part-{args.part}_"
+    fname = f"{args.user}_rigVideo_mouse-{args.mouse_name}_day-{args.day}_attempt-{args.attempt}_part-{args.part}_"
 
     # Check if session exists in output_dir
     try:
