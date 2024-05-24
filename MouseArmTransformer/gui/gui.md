@@ -35,6 +35,13 @@ python app.py --mouse_name HoneyBee --day 84
 python app.py --mouse_name HoneyBee --day 86
 ```
 
+If you want to label into the combined pool of all labeled frames, use the following command:
+```bash
+python app.py --mouse_name HoneyBee --day 77 --user combined
+```
+otherwise the default user is the username of the computer.
+
+
 # Usage
 
 The slider is used to step through frames of the video, which adapts both camera views. Adjust the the 2D markers in both camera frames to the correct locations and then hit 'Triangulate Points' to see the result in 3D and 'Save points' to save all labeled frames back to file. 
