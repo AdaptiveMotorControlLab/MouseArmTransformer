@@ -132,19 +132,21 @@ def evaluate_ground_truth(inference_preds, mouse_name, day, attempt, part=0, ver
     assert part == 0, "3D ground truth only available for part 0"
 
     # Convert predictions from dict to numpy
-    inference_preds_np = np.transpose(np.array([cp for key, cp in inference_preds.items()]), axes=(1, 0, 2))
+    inference_preds_np = np.transpose(inference_preds, axes=(0, 2, 1))
 
     # Load ground truth data
     labeled_3d = MouseArmTransformer.helper.load_and_process_ground_truth(mouse_name, day, attempt, part)
     if labeled_3d is None:
-        return -1, pd.DataFrame([])
+        return -1, pd.DataFrame([]), pd.DataFrame([])
+    if labeled_3d.index.empty:
+        return -1, pd.DataFrame([]), pd.DataFrame([])
 
     temp_dfs = []
     for frame in labeled_3d['frame'].unique():
         for marker in DLC_TO_MUJOCO_MAPPING.keys():
-            error = MouseArmTransformer.helper.calculate_gt_error(frame, marker, inference_preds_np, labeled_3d,
+            error, labeled, lifted = MouseArmTransformer.helper.calculate_gt_error(frame, marker, inference_preds_np, labeled_3d,
                                                                   DLC_TO_MUJOCO_MAPPING)
-            temp_df = pd.DataFrame({'frame': [frame], 'marker': [DLC_TO_MUJOCO_MAPPING[marker]], 'error': [error]})
+            temp_df = pd.DataFrame({'frame': [frame], 'marker': [DLC_TO_MUJOCO_MAPPING[marker]], 'error': [error], 'labeled_x': labeled[0], 'labeled_y': labeled[1], 'labeled_z': labeled[2], 'lifted_x': lifted[0], 'lifted_y': lifted[1], 'lifted_z': lifted[2]})
             temp_dfs.append(temp_df)
 
     errors_df = pd.concat(temp_dfs, ignore_index=True)
@@ -152,4 +154,4 @@ def evaluate_ground_truth(inference_preds, mouse_name, day, attempt, part=0, ver
     # Compute and print statistics
     MouseArmTransformer.helper.compute_gt_statistics(errors_df, verbose)
 
-    return errors_df['error'].mean(), errors_df
+    return errors_df['error'].mean(), errors_df, labeled_3d
