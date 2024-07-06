@@ -4,18 +4,23 @@ This directory contains the `MouseArmTransformer` module along with prototyping 
 The relevant files are contained in the `MouseArmTransformer` directory. Right now, it is possible
 to do a minimal install for loading model weights and performing inference.
 
-TODO: Extend the package to support training in python environments that contain the `mousearm` python
-package.
+![3d-dlc](https://github.com/AdaptiveMotorControlLab/MouseArmTransformer/assets/28102185/cce98f67-9ef8-48fb-b1c8-6cc34aafdd1f)
+**Figure caption:**
+**A:** Example 2D images (as in DeWolf, Schneider et al. Figure 1) of DeepLabCut keypoints on both camera views. 
+**B:** Using 3D DeepLabCut (Nath, Mathis et al. 2019) we triangulated data, then manually labeled frames for GT. This was then all passed to a transformer (see below), and video inference was done with a single camera (Camera 1) to directly predict 3D.
+**C:** Example lifted 3D pose, showing a sequence of reaching; black is early, red is late (matching the view in Camera 1), into the 3D MuJoCo spaces
+**D:** Quantification of errors in 3 example sessions (vs. GT) in MuJoCo space. Note, the forearm is 1.33572 cm in our model, and 1 cm equals 1 MuJoCo unit.
+
 
 ## Building the python wheels
 
-For integration, e.g. into datajoint, you can build a python package by running
+You can build a python package by running:
 
 ```
 make build
 ```
 
-You can check the contents of that build by running
+You can check the contents of that build by running:
 
 ```
 make test_contents
@@ -32,7 +37,7 @@ dist/MouseArmTransformer-0.1.0.tar.gz
 
 ## Testing the code
 
-If you want to run tests (in `tests/`) in a fully-configured docker environment, simply run
+If you want to run tests (in `tests/`) in a fully-configured docker environment, simply run:
 
 ```
 make test_docker
@@ -40,7 +45,7 @@ make test_docker
 
 which will build the container, the package, and then run the tests.
 
-If you have a suitable python environment set up, you can also run
+If you have a suitable python environment set up, you can also run:
 
 ```
 make test
@@ -48,32 +53,6 @@ make test
 
 to run the tests.
 
-## Contributing
-
-If you change pieces of the code and these should be merged to the main branch, **please update
-the version number** of this code. This can be done in `MouseArmTransformer/__init__.py`. 
-
-You also need to edit the `Makefile` and change this part
-
-```
-tests/contents.tgz.lst:                                                              
-        tar tf dist/MouseArmTransformer-0.0.1.tar.gz | sort > tests/contents.tgz.lst 
-```
-
-to reflect the new version information for the tests to pass. The new wheel can then be shipped
-to the datajoint pipeline, currently to this directory (please change the branch to the latest):
-
-```
-https://github.com/MMathisLab/DataJoint_mathis/tree/stes/new-dlc-and-alignment/docker/mousearm-docker
-```
-
-
-## Who to contact for questions
-
-- Markus (@CYHSM) wrote the `MouseArmTransformer` contents, and trained the model.
-  He also wrote the explorative notebooks etc. and validated the model.
-- Steffen (@stes) packaged the code for integration into datajoint. More details on this
-  are also written up here: https://github.com/MMathisLab/DataJoint_mathis/pull/87
 
 # The transformer model
 
@@ -87,3 +66,28 @@ The input to the transformer consists of sequences (of length T=2) of 2D coordin
 - Ground truth loss: Additionally we use the MSE between the model output and our ground truth 3D predictions  (see above) to provide the model with noise-free triangulation results. This loss was only active within batches that contained ground truth frames (weight: 0.0001)
 
 We train the model using the above-described loss terms across all sessions for which two cameras are available. We then use the resulting weights to generate 3D predictions for sessions with only one camera. For training specifics refere to the training.py file within this folder.
+
+## Versioning
+
+To update the version, **please update
+the version number** of this code. This can be done in `MouseArmTransformer/__init__.py`. 
+
+You also need to edit the `Makefile` and change this part
+
+```
+tests/contents.tgz.lst:                                                              
+        tar tf dist/MouseArmTransformer-0.0.1.tar.gz | sort > tests/contents.tgz.lst 
+```
+
+to reflect the new version information for the tests to pass.
+
+## Who to contact for questions
+
+- Mackenzie (@MMathisLab) oversees the project and trained the 2D DeepLabCut models.
+- Markus (@CYHSM) wrote the majority of the `MouseArmTransformer` contents, and trained the 3D model.
+  He also wrote the explorative notebooks and validated the model.
+- Wesley (@wesleymth) contributed code inputs and 3D ground truth labels.
+- Travis (studywolf) contributed 3D labels.
+- Steffen (@stes) packaged the code and provided code review.
+
+**email:** mackenzie.mathis@epfl.ch
