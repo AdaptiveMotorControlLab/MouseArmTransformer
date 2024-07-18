@@ -67,6 +67,9 @@ The input to the transformer consists of sequences (of length T=2) of 2D coordin
 
 We train the model using the above-described loss terms across all sessions for which two cameras are available. We then use the resulting weights to generate 3D predictions for sessions with only one camera. For training specifics refere to the training.py file within this folder.
 
+![Screen Shot 2024-07-18 at 12 58 14 PM](https://github.com/user-attachments/assets/7ebfa345-d634-4f89-bd51-d592b24c6a3c)
+
+
 ## Versioning
 
 To update the version, **please update
