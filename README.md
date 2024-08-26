@@ -94,3 +94,10 @@ to reflect the new version information for the tests to pass.
 - Steffen (@stes) packaged the code and provided code review.
 
 **email:** mackenzie.mathis@epfl.ch
+
+
+## Citation 
+
+If you use this code or ideas, please cite our work 🤗
+
+Frey, M., Monteith-Finas, W., DeWolf, T., Schneider, S., & Mathis, M. W. (2024). MouseArmTransformer: a transformer-based 3D lifting module for an adult mouse arm (0.1.0). Zenodo. https://doi.org/10.5281/zenodo.12673173
