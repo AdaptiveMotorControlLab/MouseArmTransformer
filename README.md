@@ -11,6 +11,25 @@ to do a minimal install for loading model weights and performing inference.
 **C:** Example lifted 3D pose, showing a sequence of reaching; black is early, red is late (matching the view in Camera 1), into the 3D MuJoCo spaces
 **D:** Quantification of errors in 3 example sessions (vs. GT) in MuJoCo space. Note, the forearm is 1.33572 cm in our model, and 1 cm equals 1 MuJoCo unit.
 
+# The transformer model
+
+For estimating 3D coordinates from the two available camera views we first use simple triangulation to obtain 3D estimates, then correct outliers in a GUI to obtain 3D ground truth. The GUI is located in `mausspaun/visualization/gui`. For usage refer to the `gui.md` file within this folder. 
+
+The transformer model takes as input the 2D DLC extracted coordinates from one camera and extracts the 3D coordinates through a linear output layer. 
+The input to the transformer consists of sequences (of length T=2) of 2D coordinates representing the marker positions (see the Dataloader classes within data.py). Each marker is represented by an x and y position. We then encode the flattened joint coordinates using a transformer layer and then project the encoder output to a three-dimensional space using a fully connected layer. We train the model using four different losses and their corresponding weights:
+- Triangulation loss: The mean-squared-error (MSE) between the model output and the noisy triangulated data (weight: 1)
+- Continuity loss: The MSE between successive timesteps, which ensures temporal smoothness between consecutive output frames (weight: 25)
+- Connectivity loss: The mean squared prediction error (MSPE) between markers, using a skeleton model of the mouse. This encourages the model to preserve the geometric relationship between joints during model training (weight: 1)
+- Ground truth loss: Additionally we use the MSE between the model output and our ground truth 3D predictions  (see above) to provide the model with noise-free triangulation results. This loss was only active within batches that contained ground truth frames (weight: 0.0001)
+
+We train the model using the above-described loss terms across all sessions for which two cameras are available. We then use the resulting weights to generate 3D predictions for sessions with only one camera. For training specifics refere to the training.py file within this folder.
+
+![Screen Shot 2024-07-18 at 12 58 14 PM](https://github.com/user-attachments/assets/7ebfa345-d634-4f89-bd51-d592b24c6a3c)
+
+
+
+
+# Developer Docs:
 
 ## Building the python wheels
 
@@ -53,23 +72,6 @@ make test
 
 to run the tests.
 
-
-# The transformer model
-
-For estimating 3D coordinates from the two available camera views we first use simple triangulation to obtain 3D estimates, then correct outliers in a GUI to obtain 3D ground truth. The GUI is located in mausspaun/visualization/gui. For usage refer to the gui.md file within this folder. 
-
-The transformer model takes as input the 2D DLC extracted coordinates from one camera and extracts the 3D coordinates through a linear output layer. 
-The input to the transformer consists of sequences (of length T=2) of 2D coordinates representing the marker positions (see the Dataloader classes within data.py). Each marker is represented by an x and y position. We then encode the flattened joint coordinates using a transformer layer and then project the encoder output to a three-dimensional space using a fully connected layer. We train the model using four different losses and their corresponding weights:
-- Triangulation loss: The mean-squared-error (MSE) between the model output and the noisy triangulated data (weight: 1)
-- Continuity loss: The MSE between successive timesteps, which ensures temporal smoothness between consecutive output frames (weight: 25)
-- Connectivity loss: The mean squared prediction error (MSPE) between markers, using a skeleton model of the mouse. This encourages the model to preserve the geometric relationship between joints during model training (weight: 1)
-- Ground truth loss: Additionally we use the MSE between the model output and our ground truth 3D predictions  (see above) to provide the model with noise-free triangulation results. This loss was only active within batches that contained ground truth frames (weight: 0.0001)
-
-We train the model using the above-described loss terms across all sessions for which two cameras are available. We then use the resulting weights to generate 3D predictions for sessions with only one camera. For training specifics refere to the training.py file within this folder.
-
-![Screen Shot 2024-07-18 at 12 58 14 PM](https://github.com/user-attachments/assets/7ebfa345-d634-4f89-bd51-d592b24c6a3c)
-
-
 ## Versioning
 
 To update the version, **please update
@@ -84,7 +86,7 @@ tests/contents.tgz.lst:
 
 to reflect the new version information for the tests to pass.
 
-## Who to contact for questions
+# Who to contact for questions
 
 - Mackenzie (@MMathisLab) oversees the project and trained the 2D DeepLabCut models.
 - Markus (@CYHSM) wrote the majority of the `MouseArmTransformer` contents, and trained the 3D model.
@@ -96,7 +98,7 @@ to reflect the new version information for the tests to pass.
 **email:** mackenzie.mathis@epfl.ch
 
 
-## Citation 
+# Citation 
 
 If you use this code or ideas, please cite our work 🤗
 
