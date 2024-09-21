@@ -1,4 +1,11 @@
-# Utilities for lifting 2D DLC keypoints into 3D mouse-arm space
+# MouseArmTransformer: a transformer-based 3D lifting module for an adult mouse arm
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12673173.svg)](https://doi.org/10.5281/zenodo.12673173)
+
+**Abstract:**  
+The MouseArmTransformer module provides a transformer-based solution for lifting 2D DeepLabCut (DLC) keypoints into a 3D mouse-arm space using minimal camera setups. Triangulation is performed using two camera views, after which ground truth (GT) labels are corrected via a custom GUI. The transformer model then predicts 3D coordinates from single-camera DLC keypoints by leveraging temporal smoothness, joint connectivity, and ground truth data. The model is trained using a combination of losses: triangulation, continuity, connectivity, and ground truth. This framework offers an efficient method for reconstructing 3D mouse-arm movements with minimal hardware, enabling accurate biomechanical analysis.
+
+## Utilities for lifting 2D DLC keypoints into 3D mouse-arm space
 
 This directory contains the `MouseArmTransformer` module along with prototyping code and notebooks.
 The relevant files are contained in the `MouseArmTransformer` directory. Right now, it is possible
