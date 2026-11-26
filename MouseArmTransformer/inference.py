@@ -1,6 +1,7 @@
 import argparse
 import os
 import pickle
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -13,10 +14,13 @@ from scipy.spatial.distance import euclidean
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
+import MouseArmTransformer.checkpoint
 import MouseArmTransformer.criterion
 import MouseArmTransformer.data
 import MouseArmTransformer.helper
 import MouseArmTransformer.model
+import MouseArmTransformer.preprocessing
+import MouseArmTransformer.windows
 from MouseArmTransformer.helper import DLC_TO_MUJOCO_MAPPING
 
 __all__ = ["run_inference"]
@@ -81,19 +85,92 @@ def evaluate(model, dataloader, gt_dataloader, device, criterion, relative_displ
                                                                                           axis=0), model_out
 
 
-def run_inference(camera1_dict,
-                  model_weights='weights_epoch_5_loss0.11_seq2_cutoff0.999_lossweights[1, 25, 1, 1e-05].pt',
-                  seq_length=7):
+def _dict_to_array(camera1_dict, min_length):
+    """{joint: (frames, 2)} -> (frames, joints, 2) in the training joint order."""
     # Make sure joints are in the same order as in the training data
     original_joints = MouseArmTransformer.helper.mausspaun_keys
-    
+
     # Dict is sorted based on insert order
     camera1_dict = {key: camera1_dict[key] for key in original_joints}
     joints = list(camera1_dict.keys())
     _assert_correct_joints(joints, original_joints)
-    _assert_correct_length(camera1_dict, min_length=seq_length + 1)
-
+    _assert_correct_length(camera1_dict, min_length=min_length)
     camera1 = np.transpose(np.array([cp for key, cp in camera1_dict.items()]), axes=(1, 0, 2))
+    return camera1, joints
+
+
+def _read_header(model_weights):
+    """(is_checkpoint, recorded pcutoff or the string "unrecorded")."""
+    blob = torch.load(MouseArmTransformer.checkpoint.resolve(model_weights),
+                      map_location="cpu",
+                      weights_only=True)
+    if isinstance(blob, dict) and blob.get("format") == MouseArmTransformer.checkpoint.FORMAT:
+        return True, blob.get("pcutoff", "unrecorded")
+    return False, "unrecorded"
+
+
+def _fill(camera1_dict, likelihood_dict, pcutoff):
+    """Apply ``preprocessing.fill_low_likelihood`` to a joint dict."""
+    camera1, joints = _dict_to_array(camera1_dict, min_length=1)
+    try:
+        likelihood = np.stack([np.asarray(likelihood_dict[key], dtype=float) for key in joints], 1)
+    except KeyError as err:
+        raise KeyError(f"likelihood_dict is missing joint {err}.") from err
+    filled, _ = MouseArmTransformer.preprocessing.fill_low_likelihood(camera1, likelihood, pcutoff)
+    return {joint: filled[:, i, :] for i, joint in enumerate(joints)}
+
+
+def _run_checkpoint(camera1_dict, model_weights, seq_length):
+    """run_inference for files written by ``checkpoint.save_checkpoint``."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model, meta = MouseArmTransformer.checkpoint.load_model(model_weights, device=device)
+    if seq_length is not None and seq_length != meta["seq_length"]:
+        raise ValueError(f"{model_weights} was trained with seq_length={meta['seq_length']}, "
+                         f"got seq_length={seq_length}. Leave seq_length unset to use the model's.")
+    camera1, joints = _dict_to_array(camera1_dict, min_length=1)
+    preds = MouseArmTransformer.windows.predict(model, camera1, meta["seq_length"], meta["target"])
+    return {joint: preds[:, i, :] for i, joint in enumerate(joints)}
+
+
+def run_inference(camera1_dict,
+                  model_weights='weights_epoch_5_loss0.11_seq2_cutoff0.999_lossweights[1, 25, 1, 1e-05].pt',
+                  seq_length=None,
+                  likelihood_dict=None,
+                  pcutoff="auto"):
+    """Lift 2D keypoints of one camera to 3D.
+
+    Args:
+        camera1_dict: {joint name: (frames, 2) pixel coordinates} for every joint in
+            ``helper.mausspaun_keys``.
+        model_weights: A file shipped in ``MouseArmTransformer/weights`` or a path. Either a
+            published weights file or a checkpoint from ``checkpoint.save_checkpoint``.
+        seq_length: Window length. Published weights: default 7. Checkpoints store their own
+            (leave unset).
+        likelihood_dict: Optional {joint name: (frames,)} DLC likelihoods. If given, points
+            below ``pcutoff`` are replaced by linear interpolation in time
+            (``preprocessing.fill_low_likelihood``) before lifting. If not given, the
+            keypoints are used as they are (as in earlier versions).
+        pcutoff: Threshold for the filling: ``"auto"`` (the one the checkpoint was trained
+            with if it records one, else ``preprocessing.DEFAULT_PCUTOFF`` = 0.4), a number in
+            [0, 1], or None (no filling).
+
+    Returns:
+        {joint name: (frames, 3)}.
+    """
+    is_checkpoint, recorded = _read_header(model_weights)
+    if likelihood_dict is not None:
+        if pcutoff == "auto":
+            pcutoff = MouseArmTransformer.preprocessing.DEFAULT_PCUTOFF if recorded == "unrecorded" else recorded
+        camera1_dict = _fill(camera1_dict, likelihood_dict, pcutoff)
+    elif recorded not in ("unrecorded", None):
+        warnings.warn(f"{model_weights} was trained on keypoints filled below likelihood {recorded}; "
+                      "pass likelihood_dict to prepare the input the same way.")
+    if is_checkpoint:
+        return _run_checkpoint(camera1_dict, model_weights, seq_length)
+    if seq_length is None:
+        seq_length = 7
+
+    camera1, joints = _dict_to_array(camera1_dict, min_length=seq_length + 1)
 
     # Load model and weights
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
