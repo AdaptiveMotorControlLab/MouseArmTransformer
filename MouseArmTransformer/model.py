@@ -12,11 +12,17 @@ class SimpleTransformer(nn.Module):
         super(SimpleTransformer, self).__init__()
         self.num_joints = num_joints
         self.transformer = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=2 * self.num_joints,
-                                                                            nhead=(num_joints // 4)),
+                                                                            nhead=(num_joints // 4),
+                                                                            batch_first=True),
                                                  num_layers=2)
         self.fc = nn.Linear(2 * self.num_joints, 3 * self.num_joints)
 
     def forward(self, x):
+        """Lift a batch of windows of 2D keypoints to 3D.
+
+        x: (batch, time, joints, 2). Returns (batch, time, joints, 3). Attention runs over
+        the time steps of each window; windows in a batch are independent.
+        """
         x = rearrange(x, "b t j c -> b t (j c)")
         #lstm_output, _ = self.lstm(x)  # LSTM output
         transformer_output = self.transformer(x)
