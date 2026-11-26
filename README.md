@@ -31,6 +31,8 @@ The input to the transformer consists of sequences (of length T=2) of 2D coordin
 
 We train the model using the above-described loss terms across all sessions for which two cameras are available. We then use the resulting weights to generate 3D predictions for sessions with only one camera. For training specifics refere to the training.py file within this folder.
 
+**Note (v0.4.0):** up to v0.3.0 the transformer layer was built without `batch_first=True` while being fed `(batch, time, features)`, so attention ran across the windows of a batch instead of across the frames of each window. From v0.4.0 attention runs over the frames of each window, as intended. The published weights were trained before this fix and load unchanged. On new rig recordings their outputs moved by 0.005-0.07 mm on average (averaged weights) and 0.01-0.3 mm (default seq-2 weights, rare frames up to 6 mm), with no loss of accuracy against stereo triangulation. Install v0.3.0 to reproduce earlier outputs exactly.
+
 ![Screen Shot 2024-07-18 at 12 58 14 PM](https://github.com/user-attachments/assets/7ebfa345-d634-4f89-bd51-d592b24c6a3c)
 
 
