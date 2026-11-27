@@ -31,10 +31,54 @@ The input to the transformer consists of sequences (of length T=2) of 2D coordin
 
 We train the model using the above-described loss terms across all sessions for which two cameras are available. We then use the resulting weights to generate 3D predictions for sessions with only one camera. For training specifics refere to the training.py file within this folder.
 
+**Note (v0.4.0):** up to v0.3.0 the transformer layer was built without `batch_first=True` while being fed `(batch, time, features)`, so attention ran across the windows of a batch instead of across the frames of each window. From v0.4.0 attention runs over the frames of each window, as intended. The published weights were trained before this fix and load unchanged. On new rig recordings their outputs moved by 0.005-0.07 mm on average (averaged weights) and 0.01-0.3 mm (default seq-2 weights, rare frames up to 6 mm), with no loss of accuracy against stereo triangulation. Install v0.3.0 to reproduce earlier outputs exactly.
+
 ![Screen Shot 2024-07-18 at 12 58 14 PM](https://github.com/user-attachments/assets/7ebfa345-d634-4f89-bd51-d592b24c6a3c)
 
 
 
+## Model options (v0.5.0)
+
+`SimpleTransformer` has opt-in options. The defaults are the published architecture, so the released weights load and behave exactly as before.
+
+| Option | Default | Effect |
+|---|---|---|
+| `image_size=(w, h)` | `None` (raw pixels) | Inputs are centred on the image and divided by a third of its width inside the model. |
+| `input_proj`, `d_model` | `False`, `2 * num_joints` | Linear projection of the flattened 2D input to `d_model` (needed for a width other than `2 * num_joints`). |
+| `pos_encoding` | `False` | Learned positional encoding over the frames of a window. |
+| `num_layers`, `nhead`, `dim_feedforward`, `dropout` | `2`, `num_joints // 4`, `2048`, `0.1` | Transformer encoder size. |
+| `output_norm`, `output_scale` | `False`, `1.0` | Outputs in the units of the training targets (`raw * output_scale + output_mean`; set by the trainer). |
+
+Prediction target (set when training, stored with the model): `"last"` (default, causal: each frame is predicted from itself and the frames before it) or `"center"` (each frame is the centre of its window, so it also uses `seq_length // 2` later frames; its prediction is only available that many frames later, e.g. 150 ms for a 31-frame window at 100 fps).
+
+### Low-likelihood keypoints
+
+DLC gives a position for every keypoint in every frame, with a likelihood. `preprocessing.fill_low_likelihood(xy, likelihood, pcutoff=0.4)` replaces points below `pcutoff` by linear interpolation in time between the nearest confident frames (holding the first/last confident value at the ends of a recording; a joint never confident gets its median position). `pcutoff=None` keeps every point as DLC gave it. Interpolation uses later frames, so it is meant for recorded videos. It is a simple interim way of handling bad points rather than the best possible one. Whether it helps depends on how good DLC's low-likelihood guesses are for a camera; it can be checked by projecting the 3D into a second camera.
+
+`run_inference(..., likelihood_dict=...)` applies it before lifting (threshold: the one a checkpoint was trained with, otherwise 0.4; override with `pcutoff=`). Without `likelihood_dict` the keypoints are used as given, as before.
+
+### Training on your own data
+
+`training.py` (used for the published weights) needs the original data and the `mausspaun` package. `trainer.fit` only needs 2D keypoints of the camera to lift and 3D targets (e.g. stereo triangulation) for the same frames:
+
+```python
+import MouseArmTransformer
+from MouseArmTransformer import checkpoint, trainer
+
+# one (xy, xyz, likelihood) per recording: xy (frames, 32, 2) DLC pixels, xyz (frames, 32, 3)
+# with NaN where no 3D is known, likelihood (frames, 32); joints in helper.mausspaun_keys order
+model, history = trainer.fit(train_recordings, val_recordings,
+                             seq_length=7, target="last", image_size=(640, 480),
+                             model_kwargs=dict(input_proj=True, pos_encoding=True, d_model=128,
+                                               num_layers=4, dim_feedforward=512))
+checkpoint.save_checkpoint("my_model.pt", model, seq_length=7, target="last",
+                           pcutoff=history[-1]["pcutoff"])
+
+lifted = MouseArmTransformer.run_inference(points, model_weights="my_model.pt",
+                                           likelihood_dict=likelihoods)
+```
+
+Training: random windows from all recordings (never across two), mean squared error to the targets (missing targets ignored), AdamW, warm-up then cosine learning rate, early stopping on the validation recordings. `checkpoint.save_checkpoint` stores the weights with everything needed to use them (architecture, window, target, input filling); `checkpoint.load_model` reads these files and the published ones.
 
 # Developer Docs:
 
